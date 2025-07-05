@@ -1,0 +1,28 @@
+services:
+  tee-agent:
+    # Local development - build directly without registry
+    # This is for testing and development on your local machine
+    build:
+      context: .
+      dockerfile: Dockerfile.tee
+    environment:
+      # Local development configuration
+      - OASIS_NETWORK=localnet
+      - ETHEREUM_NETWORK=localhost
+      - SAPPHIRE_RPC_URL=http://localhost:8545
+      # Local development environment variables
+      - ETHEREUM_RPC_URL=http://localhost:8545
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # Contract addresses for local testing
+      - ICO_CONTRACT_ADDRESS=${ICO_CONTRACT_ADDRESS:-}
+      - TOKEN_CONTRACT_ADDRESS=${TOKEN_CONTRACT_ADDRESS:-}
+      - BATCH_SETTLEMENT_ADDRESS=${BATCH_SETTLEMENT_ADDRESS:-}
+      # TEE Configuration for local development
+      - TEE_MODE=development
+      - LOG_LEVEL=debug
+    # Entry point for the TEE agent
+    command: ["python", "agent.py"]
+    ports:
+      - "8080:8080"  # Expose for local testing
+    volumes:
+      - ./oracle:/app  # Mount source code for hot reload in development 

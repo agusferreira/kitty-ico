@@ -1,0 +1,30 @@
+services:
+  tee-agent:
+    # Testnet deployment - uses published registry image
+    # This is for actual testnet deployment with cross-platform support
+    image: docker.io/agusferreira906/kitty-ico-tee-agent:latest
+    platform: linux/amd64  # Required for TDX deployments
+    build:
+      context: .
+      dockerfile: Dockerfile.tee
+      # Ensure build targets the correct platform for TDX
+      platforms:
+        - linux/amd64
+    environment:
+      # Production network configuration for Sapphire Testnet
+      - OASIS_NETWORK=testnet
+      - ETHEREUM_NETWORK=sepolia
+      - SAPPHIRE_RPC_URL=https://testnet.sapphire.oasis.dev
+      # Environment variables that will be injected during deployment
+      - ETHEREUM_RPC_URL=${ETHEREUM_RPC_URL:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # Contract addresses will be set after deployment
+      - ICO_CONTRACT_ADDRESS=${ICO_CONTRACT_ADDRESS:-}
+      - TOKEN_CONTRACT_ADDRESS=${TOKEN_CONTRACT_ADDRESS:-}
+      - BATCH_SETTLEMENT_ADDRESS=${BATCH_SETTLEMENT_ADDRESS:-}
+      # TEE Configuration for production
+      - TEE_MODE=production
+      - LOG_LEVEL=info
+    # Entry point for the TEE agent
+    command: ["python", "agent.py"]
+    # Production deployment - no port exposure or volume mounts for security 

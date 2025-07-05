@@ -1,0 +1,168 @@
+version: '3.8'
+
+services:
+  # TEE Agent for local development
+  tee-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.tee
+    container_name: kitty-ico-tee-agent-local
+    restart: unless-stopped
+    
+    # Environment variables for local development
+    environment:
+      - NODE_ENV=development
+      - TEE_MODE=development
+      - LOG_LEVEL=debug
+      # Network configuration
+      - OASIS_NETWORK=localnet
+      - ETHEREUM_NETWORK=hardhat
+      # RPC endpoints for local development
+      - SAPPHIRE_RPC_URL=http://oasis-node:8545
+      - ETHEREUM_RPC_URL=http://host.docker.internal:8545
+      # API keys (development/mock)
+      - OPENAI_API_KEY=sk-development-key
+      # Contract addresses (to be set after deployment)
+      - ICO_CONTRACT_ADDRESS=${ICO_CONTRACT_ADDRESS:-}
+      - TOKEN_CONTRACT_ADDRESS=${TOKEN_CONTRACT_ADDRESS:-}
+      - BATCH_SETTLEMENT_ADDRESS=${BATCH_SETTLEMENT_ADDRESS:-}
+      # TEE-specific configuration (relaxed for development)
+      - TEE_KEY_GENERATION=development
+      - TEE_STORAGE_ENCRYPTION=false
+      - TEE_ATTESTATION_REQUIRED=false
+    
+    # Volume mounts for development
+    volumes:
+      - ./data/tee-data:/app/data
+      - ./data/tee-keys:/app/keys
+      - ./data/tee-logs:/app/logs
+      - ./oracle:/app:ro  # Source code for development
+    
+    # Network configuration
+    networks:
+      - tee-network
+    
+    # Port mapping for debugging
+    ports:
+      - "9229:9229"  # Node.js debugger
+    
+    # Development command with hot reload
+    command: >
+      sh -c "
+        echo 'Starting TEE Agent in development mode...' &&
+        python agent.py
+      "
+    
+    # Dependencies
+    depends_on:
+      - oasis-node
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "print('Development health check')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Local Oasis node for development
+  oasis-node:
+    image: "ghcr.io/oasisprotocol/demo-rofl-chatbot:latest@sha256:b62206f22871ea506e2a3d1db5bfbc8f9c15c68279708a0d5f845a1654f9712f"
+    container_name: kitty-ico-oasis-node-local
+    restart: unless-stopped
+    
+    # Environment for local development
+    environment:
+      - OASIS_UNSAFE_SKIP_AVR_VERIFY=1
+      - OASIS_UNSAFE_SKIP_KM_POLICY=1
+      - OASIS_UNSAFE_ALLOW_DEBUG_ENCLAVES=1
+    
+    # Volume mounts
+    volumes:
+      - ./data/oasis-data:/data
+      - ./oasis-config:/config
+    
+    # Network configuration
+    networks:
+      - tee-network
+    
+    # Port mapping
+    ports:
+      - "8545:8545"  # RPC
+      - "8546:8546"  # WebSocket
+      - "9001:9001"  # Oasis node metrics
+    
+    # Command for local development
+    command: >
+      --config /config/localnet.yaml
+      --datadir /data
+      --log.level debug
+      --log.format json
+      --grpc.port 9001
+      --runtime.mode auto
+      --runtime.sgx.loader /usr/bin/oasis-core-runtime-loader
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8545"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Frontend for local development
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: kitty-ico-frontend-local
+    restart: unless-stopped
+    profiles:
+      - frontend
+    
+    # Environment variables
+    environment:
+      - NODE_ENV=development
+      - VITE_ICO_CONTRACT_ADDRESS=${ICO_CONTRACT_ADDRESS:-}
+      - VITE_TOKEN_CONTRACT_ADDRESS=${TOKEN_CONTRACT_ADDRESS:-}
+      - VITE_BATCH_SETTLEMENT_ADDRESS=${BATCH_SETTLEMENT_ADDRESS:-}
+      - VITE_SAPPHIRE_RPC_URL=http://localhost:8545
+      - VITE_ETHEREUM_RPC_URL=http://localhost:8545
+    
+    # Volume mounts for development
+    volumes:
+      - ./frontend/src:/app/src:ro
+      - ./frontend/public:/app/public:ro
+    
+    # Network configuration
+    networks:
+      - tee-network
+    
+    # Port mapping
+    ports:
+      - "5173:5173"  # Vite dev server
+    
+    # Dependencies
+    depends_on:
+      - tee-agent
+      - oasis-node
+
+# Named volumes for local development
+volumes:
+  tee-data:
+    driver: local
+  tee-keys:
+    driver: local
+  tee-logs:
+    driver: local
+  oasis-data:
+    driver: local
+
+# Networks
+networks:
+  tee-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.21.0.0/16 
