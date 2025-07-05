@@ -1,0 +1,35 @@
+# NOTE: This name appears in GitHub's Checks API and in workflow's status badge.
+name: deploy-main
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-main:
+    # NOTE: This name appears in GitHub's Checks API.
+    name: deploy-main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: yarn
+      - name: Build website
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+        env:
+          REACT_APP_FATHOM_SITE_ID: ${{ secrets.REACT_APP_FATHOM_SITE_ID }}
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build
+          force_orphan: true
+          cname: docs.oasis.io
+          user_name: github-actions[bot]
+          user_email: 41898282+github-actions[bot]@users.noreply.github.com
