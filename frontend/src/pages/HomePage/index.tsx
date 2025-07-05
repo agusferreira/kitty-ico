@@ -1,52 +1,42 @@
 import { FC, useState } from 'react'
 import { Card } from '../../components/Card'
 import { Button } from '../../components/Button'
-import { SaleCard } from '../../components/SaleCard'
-import { BidForm } from '../../components/BidForm'
+import { KittyBidPanel } from '../../components/KittyBidPanel'
 import classes from './index.module.css'
 import { useAccount } from 'wagmi'
 import { useICO } from '../../hooks/useICO'
-import { BidFormData } from '../../types/ico'
+import { BidFormData, BidPayload } from '../../types/ico'
 import { StringUtils } from '../../utils/string.utils'
 
 export const HomePage: FC = () => {
   const { address } = useAccount()
-  const { sales, isLoading, error, isSubmittingBid, submitBid, getSale, fetchSales, clearError } = useICO()
-  
-  const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null)
+  const { error, isSubmittingBid, submitBid, clearError } = useICO()
   const [bidSuccess, setBidSuccess] = useState<string | null>(null)
 
-  const handleBidClick = (saleId: number) => {
-    setSelectedSaleId(saleId)
-    setBidSuccess(null)
-    clearError()
-  }
-
-  const handleBidCancel = () => {
-    setSelectedSaleId(null)
-    setBidSuccess(null)
-    clearError()
-  }
-
-  const handleBidSubmit = async (bidData: BidFormData) => {
-    if (!selectedSaleId) return
+  const handlePanelSubmit = async (bid: BidPayload) => {
+    // We are assuming a single sale, so we can hardcode the saleId to 1
+    const saleId = 1;
+    const bidData: BidFormData = {
+      ...bid,
+      price: String(bid.price),
+      amount: String(bid.amount),
+    };
 
     try {
-      await submitBid(selectedSaleId, bidData)
-      setBidSuccess(`Bid submitted successfully for Sale #${selectedSaleId}!`)
-      setSelectedSaleId(null)
+      await submitBid(saleId, bidData)
+      setBidSuccess(`Bid submitted successfully for Sale #${saleId}!`)
     } catch (error) {
       console.error('Bid submission failed:', error)
       // Error is handled by the useICO hook
     }
   }
 
-  const selectedSale = selectedSaleId ? getSale(selectedSaleId) : null
+
 
   return (
     <div className={classes.homePage}>
       {!address && (
-        <Card header={<h2>Kitty ICO</h2>}>
+        <Card header={<h2>Kitty Sale</h2>}>
           <div className={classes.connectWalletText}>
             <p>Pitch Kitty why you should get the token.</p>
             <p>If Kitty approves, nobody will ask.</p>
@@ -80,70 +70,33 @@ export const HomePage: FC = () => {
         </Card>
       )}
 
-      {address && !selectedSale && (
+      {address && (
         <>
-          <Card header={<h2>Kitty Sale</h2>}>
-            <div className={classes.salesDescription}>
-              <p>Participate in confidential ICO sales with AI-powered scoring.</p>
-              <p>Your bids are encrypted and evaluated based on multiple criteria including price competitiveness, pitch quality, and geographic diversity.</p>
-            </div>
-            
-            {error && (
+          {bidSuccess && (
+            <Card>
+              <div className={classes.successMessage}>
+                <p>{bidSuccess}</p>
+                <Button color="secondary" onClick={() => setBidSuccess(null)}>
+                  Dismiss
+                </Button>
+              </div>
+            </Card>
+          )}
+          {error && (
+            <Card>
               <div className={classes.errorMessage}>
                 <p className="error">{StringUtils.truncate(error)}</p>
                 <Button color="secondary" onClick={clearError}>
                   Dismiss
                 </Button>
               </div>
-            )}
-            
-            {bidSuccess && (
-              <div className={classes.successMessage}>
-                <p className={classes.success}>{bidSuccess}</p>
-                <Button color="secondary" onClick={() => setBidSuccess(null)}>
-                  Dismiss
-                </Button>
-              </div>
-            )}
-            
-            <div className={classes.salesControls}>
-              <Button color="secondary" onClick={fetchSales} disabled={isLoading}>
-                {isLoading ? 'Refreshing...' : 'Refresh Sales'}
-              </Button>
-            </div>
-          </Card>
-
-          <div className={classes.salesGrid}>
-            {isLoading && sales.length === 0 && (
-              <Card>
-                <div className={classes.loadingText}>
-                  <p>Loading ICO sales...</p>
-                </div>
-              </Card>
-            )}
-            
-
-            
-            {sales.map(sale => (
-              <SaleCard
-                key={sale.id}
-                sale={sale}
-                onBidClick={handleBidClick}
-                showBidButton={!sale.finalized}
-              />
-            ))}
-          </div>
+            </Card>
+          )}
+          <KittyBidPanel onSubmit={handlePanelSubmit} isLoading={isSubmittingBid ?? false} />
         </>
       )}
 
-      {address && selectedSale && (
-        <BidForm
-          sale={selectedSale}
-          onSubmit={handleBidSubmit}
-          onCancel={handleBidCancel}
-          isSubmitting={isSubmittingBid}
-        />
-      )}
+
     </div>
   )
 }

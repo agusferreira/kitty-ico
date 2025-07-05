@@ -21,6 +21,13 @@ export interface EncryptedBid {
   permitSig: string
 }
 
+export interface BidPayload {
+  country: string;
+  price: number;
+  amount: number;
+  pitch: string;
+}
+
 export interface BidFormData {
   amount: string
   price: string

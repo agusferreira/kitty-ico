@@ -1,0 +1,76 @@
+.kittyBidPanel {
+  font-family: 'Roboto Mono Variable', monospace;
+  color: var(--white);
+}
+
+.connectPrompt p {
+  color: var(--black);
+  text-align: center;
+  font-family: 'Roboto Mono Variable', monospace;
+}
+
+.formSection {
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--brand-dark-blue);
+  padding: 1rem;
+  border-radius: 4px;
+  background-color: rgba(0, 240, 255, 0.05);
+}
+
+.tokenMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--brand-blue);
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.formGroupRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.label {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--black);
+}
+
+.input,
+.textarea {
+  background-color: var(--white);
+  border: 1px solid var(--gray-blue-border);
+  color: var(--black);
+  padding: 0.75rem;
+  border-radius: 4px;
+  font-family: 'Roboto Mono Variable', monospace;
+  font-size: 1rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--brand-blue);
+  box-shadow: 0 0 10px var(--brand-blue);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.totalCost {
+  text-align: right;
+  margin-top: -1rem;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+  color: var(--black);
+}
