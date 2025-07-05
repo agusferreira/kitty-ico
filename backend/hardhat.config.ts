@@ -112,6 +112,18 @@ const config: HardhatUserConfig = {
       // https://hardhat.org/metamask-issue.html
       chainId: 1337,
     },
+    // Ethereum networks for token deployment
+    sepolia: {
+      url: process.env.ETHEREUM_SEPOLIA_RPC_URL || 'https://sepolia.infura.io/v3/0e388a17e734434abc996a366025f972',
+      chainId: 11155111,
+      accounts,
+    },
+    mainnet: {
+      url: process.env.ETHEREUM_RPC_URL || 'https://mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
+      chainId: 1,
+      accounts,
+    },
+    // Sapphire networks for ICO contract deployment
     sapphire: {
       url: 'https://sapphire.oasis.io',
       chainId: 0x5afe,
