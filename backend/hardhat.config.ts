@@ -45,7 +45,7 @@ task('deploy')
     await hre.run('compile')
 
     // For deployment unwrap the provider to enable contract verification.
-    const uwProvider = new JsonRpcProvider(hre.network.config.url)
+    const uwProvider = new JsonRpcProvider((hre.network.config as any).url)
     const MessageBox = await hre.ethers.getContractFactory(
       'MessageBox',
       new hre.ethers.Wallet(accounts[0], uwProvider)
@@ -130,7 +130,7 @@ const config: HardhatUserConfig = {
     },
   },
   solidity: {
-    version: '0.8.16',
+    version: '0.8.24',
     settings: {
       optimizer: {
         enabled: true,
