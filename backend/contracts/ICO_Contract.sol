@@ -89,8 +89,9 @@ contract ICO_Contract {
      * @param deadline    Unix timestamp when bidding ends.
      * @param policyHash  SHA-256 or keccak-256 hash of the scoring policy JSON.
      *
-     * NOTE: Tokens remain on Ethereum. Issuer must pre-approve TEE agent
-     *       to spend tokens before calling createSale().
+     * NOTE: Tokens remain on Ethereum. Issuer must pre-approve BatchSettlement contract
+     *       to spend tokens before calling createSale(). This contract only records
+     *       the sale parameters and emits events for cross-chain settlement.
      */
     function createSale(
         uint256 supply,
@@ -101,7 +102,7 @@ contract ICO_Contract {
         require(deadline > block.timestamp, "deadline in past");
 
         // NOTE: No token transfer here - tokens stay on Ethereum
-        // Issuer must pre-approve TEE agent: kittyToken.approve(teeAgent, supply)
+        // Issuer must pre-approve BatchSettlement: kittyToken.approve(batchSettlement, supply)
 
         saleId = ++nextSaleId;
 
@@ -183,12 +184,30 @@ contract ICO_Contract {
         emit SettlementRecorded(saleId, winners.length, winners.length * amountPerWinner);
     }
 
+    /**
+     * @notice Allows issuer to reclaim tokens if sale fails or is cancelled.
+     * @dev Can only be called after deadline if sale was not finalized.
+     */
+    function reclaimTokens(uint256 saleId) external {
+        Sale storage sale = sales[saleId];
+        require(sale.deadline != 0, "sale not found");
+        require(msg.sender == sale.issuer, "not issuer");
+        require(block.timestamp >= sale.deadline, "too early");
+        require(!sale.finalized, "already finalized");
+        
+        uint256 remainingSupply = sale.supply;
+        require(remainingSupply > 0, "no tokens to reclaim");
+        
+        sale.supply = 0;
+        require(newToken.transfer(sale.issuer, remainingSupply), "token transfer failed");
+    }
+
     /* ========== Internal Helpers ========== */
 
     /**
      * @dev Records settlement for cross-chain execution.
      *      TEE agent will monitor TokensAllocated events and execute 
-     *      the actual token transfers on Ethereum.
+     *      the actual token transfers through BatchSettlement on Ethereum.
      */
     function _settleWinner(
         uint256 saleId,
@@ -200,14 +219,11 @@ contract ICO_Contract {
 
         bid.claimed = true;
 
-        // TODO: decode bid.permitSig and call IERC20Permit for payment token.
-        // Skipped for minimal implementation.
-
-        // Record allocation (no actual transfer - TEE agent will execute on Ethereum)
+        // Record allocation (actual transfer happens on Ethereum via BatchSettlement)
         require(amount <= sales[saleId].supply, "insufficient supply");
         sales[saleId].supply -= amount;
 
-        // Emit event for TEE agent to execute on Ethereum
+        // Emit event for TEE agent to execute on Ethereum via BatchSettlement
         emit TokensAllocated(saleId, winner, amount, 0); // price=0 for now
     }
 

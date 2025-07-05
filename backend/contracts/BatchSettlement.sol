@@ -162,13 +162,13 @@ contract BatchSettlement {
             s
         );
         
-        // Collect payment from winner
+        // Collect payment from winner and send to issuer
         require(
             IERC20(address(paymentToken)).transferFrom(settlement.winner, issuer, settlement.payment),
             "payment transfer failed"
         );
         
-        // Send tokens to winner
+        // Transfer tokens from issuer to winner (issuer must have approved this contract)
         require(
             token.transferFrom(issuer, settlement.winner, settlement.tokenAmount),
             "token transfer failed"

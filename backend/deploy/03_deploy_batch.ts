@@ -1,34 +1,38 @@
 import hre from 'hardhat'
 import { Wallet } from 'ethers';
 
+/**
+ * Deploy BatchSettlement Contract on Ethereum (Sepolia)
+ * 
+ * This script deploys the BatchSettlement contract that will handle
+ * cross-chain token distribution based on TEE agent decisions.
+ */
+
 async function main() {
   const { ethers } = hre as any
   
   // Get deployer from mnemonic
   const mnemonic = process.env.MNEMONIC 
-    ?? 'test test test test test test test test test test test junk' // Fallback to hardhat test mnemonic
+    ?? 'test test test test test test test test test test test junk'
   const deployer = Wallet.fromPhrase(mnemonic).connect(ethers.provider)
   
-  console.log('=== DEPLOYING BATCH SETTLEMENT TO ETHEREUM ===')
+  console.log('=== DEPLOYING BATCH SETTLEMENT ===')
   console.log('Deployer:', deployer.address)
-  console.log('Mnemonic in use:', mnemonic)
   console.log('Network:', hre.network.name)
-  console.log('Chain ID:', hre.network.config.chainId)
 
-  // Check if we're on Ethereum network
-  const isEthereum = hre.network.name === 'sepolia' || hre.network.name === 'mainnet'
-  if (!isEthereum) {
-    console.error('❌ BatchSettlement must be deployed on Ethereum (sepolia/mainnet)')
+  // Validate network
+  if (hre.network.name !== 'sepolia' && hre.network.name !== 'mainnet') {
+    console.error('❌ This script must run on Ethereum (sepolia/mainnet)')
     console.error('Current network:', hre.network.name)
     process.exit(1)
   }
 
-  // Get TEE public key (from TEE agent logs)
-  const teePubKey = process.env.TEE_PUBKEY ?? '0x16d435EC891be39706e82DB88AedCA39167622dD'
-  if (teePubKey === '0x16d435EC891be39706e82DB88AedCA39167622dD') {
-    console.log('🔐 Using TEE agent public key from deployment')
-  } else {
-    console.log('🔐 Using custom TEE public key')
+  // Get TEE public key
+  const teePubKey = process.env.TEE_PUBKEY
+  if (!teePubKey) {
+    console.error('❌ TEE_PUBKEY environment variable is required')
+    console.error('Please set: export TEE_PUBKEY=<tee_public_key>')
+    process.exit(1)
   }
 
   console.log('🔐 TEE Public Key:', teePubKey)
@@ -40,20 +44,11 @@ async function main() {
   
   const batchAddress = await batchSettlement.getAddress()
   console.log('✅ BatchSettlement deployed successfully!')
-  console.log('📍 Contract Address:', batchAddress)
-  console.log('🌐 Network:', hre.network.name)
+  console.log('📍 Address:', batchAddress)
   
-  console.log('\n=== NEXT STEPS ===')
-  console.log('1. Deploy KITTY token:')
-  console.log('   npx hardhat run deploy/01_deploy_token.ts --network', hre.network.name)
-  console.log('2. Deploy ICO contract on Sapphire:')
-  console.log('   TOKEN_CONTRACT_ADDRESS=<token_addr> npx hardhat run deploy/02_deploy_ico.ts --network sapphire-testnet')
-  console.log('3. Setup issuer approval:')
-  console.log('   kittyToken.approve(' + batchAddress + ', saleSupply)')
-  
-  console.log('\n=== EXPORT ADDRESSES ===')
+  // Export for next deployment steps
+  console.log('\n=== EXPORT FOR NEXT STEPS ===')
   console.log('export BATCH_SETTLEMENT_ADDR=' + batchAddress)
-  console.log('export TEE_PUBKEY=' + teePubKey)
   
   return batchAddress
 }

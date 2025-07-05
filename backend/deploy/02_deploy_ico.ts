@@ -1,38 +1,49 @@
 import hre from 'hardhat'
 import { Wallet } from 'ethers';
 
+/**
+ * Deploy ICO Contract on Sapphire (Testnet)
+ * 
+ * This script deploys the ICO contract that will handle bid collection
+ * and winner selection on Oasis Sapphire.
+ */
+
 async function main() {
   const { ethers } = hre as any
   
   // Get deployer from mnemonic
   const mnemonic = process.env.MNEMONIC 
-    ?? 'test test test test test test test test test test test junk' // Fallback to hardhat test mnemonic
+    ?? 'test test test test test test test test test test test junk'
   const deployer = Wallet.fromPhrase(mnemonic).connect(ethers.provider)
   
-  console.log('=== DEPLOYING ICO CONTRACT TO SAPPHIRE ===')
+  console.log('=== DEPLOYING ICO CONTRACT ===')
   console.log('Deployer:', deployer.address)
-  console.log('Mnemonic in use:', mnemonic)
   console.log('Network:', hre.network.name)
-  console.log('Chain ID:', hre.network.config.chainId)
 
-  // Get the token address from environment (deployed on Ethereum)
-  const tokenAddress = process.env.TOKEN_CONTRACT_ADDRESS
-  if (!tokenAddress) {
-    console.error('❌ TOKEN_CONTRACT_ADDRESS not found!')
-    console.error('Please deploy the token first on Ethereum and set:')
-    console.error('export TOKEN_CONTRACT_ADDRESS=<token_address>')
+  // Validate network
+  if (hre.network.name !== 'sapphire-testnet' && hre.network.name !== 'sapphire') {
+    console.error('❌ This script must run on Sapphire (sapphire-testnet/sapphire)')
+    console.error('Current network:', hre.network.name)
     process.exit(1)
   }
 
-  // TEE public key for signature verification (from TEE agent logs)
-  const teePubKey = process.env.TEE_PUBKEY ?? '0x16d435EC891be39706e82DB88AedCA39167622dD'
-  if (teePubKey === '0x16d435EC891be39706e82DB88AedCA39167622dD') {
-    console.log('🔐 Using TEE agent public key from deployment')
-  } else {
-    console.log('🔐 Using custom TEE public key')
+  // Get the token address from environment
+  const tokenAddress = process.env.TOKEN_CONTRACT_ADDRESS
+  if (!tokenAddress) {
+    console.error('❌ TOKEN_CONTRACT_ADDRESS environment variable is required')
+    console.error('Please deploy the token first and set: export TOKEN_CONTRACT_ADDRESS=<token_address>')
+    process.exit(1)
   }
 
-  console.log('🔗 Ethereum Token Address:', tokenAddress)
+  // Get TEE public key
+  const teePubKey = process.env.TEE_PUBKEY
+  if (!teePubKey) {
+    console.error('❌ TEE_PUBKEY environment variable is required')
+    console.error('Please set: export TEE_PUBKEY=<tee_public_key>')
+    process.exit(1)
+  }
+
+  console.log('🔗 Token Address:', tokenAddress)
   console.log('🔐 TEE Public Key:', teePubKey)
 
   // Deploy ICO_Contract on Sapphire
@@ -41,14 +52,11 @@ async function main() {
   
   const icoAddress = await ICO.getAddress()
   console.log('✅ ICO Contract deployed successfully!')
-  console.log('📍 Sapphire ICO Address:', icoAddress)
-  console.log('🌐 Network:', hre.network.name)
+  console.log('📍 Address:', icoAddress)
   
-  console.log('\n=== DEPLOYMENT SUMMARY ===')
-  console.log('Ethereum Token:', tokenAddress)
-  console.log('Sapphire ICO Contract:', icoAddress)
-  console.log('TEE Public Key:', teePubKey)
-
+  // Export for next deployment steps
+  console.log('\n=== EXPORT FOR NEXT STEPS ===')
+  console.log('export ICO_CONTRACT_ADDRESS=' + icoAddress)
   
   return icoAddress
 }
