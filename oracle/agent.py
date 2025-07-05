@@ -17,6 +17,9 @@ import sys
 import json
 import asyncio
 import logging
+from logging.handlers import RotatingFileHandler
+import tempfile
+import time
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime
@@ -34,12 +37,41 @@ import secrets
 # OpenAI for pitch scoring
 import openai
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Configure logging with rotation to prevent storage overflow
+def setup_logging():
+    """Setup logging with rotation to prevent storage issues"""
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    
+    # Create formatter
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
+    # Console handler for immediate output
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    
+    # Rotating file handler to prevent log files from growing too large
+    # Max 10MB per file, keep 3 files max (30MB total)
+    try:
+        file_handler = RotatingFileHandler(
+            '/tmp/agent.log',
+            maxBytes=10*1024*1024,  # 10MB per file
+            backupCount=3,          # Keep 3 backup files max
+            encoding='utf-8'
+        )
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+    except Exception as e:
+        # If file logging fails, continue with console only
+        logger.warning(f"Could not setup file logging: {e}")
+    
+    return logger
+
+# Initialize logging
+logger = setup_logging()
 
 @dataclass
 class SettlementData:
@@ -158,7 +190,8 @@ print(account.address)
             os.makedirs('/tmp/keys', exist_ok=True)
             
             # Export to file for external access
-            with open("/tmp/keys/public_key.txt", 'w') as f:
+            key_file = "/tmp/keys/public_key.txt"
+            with open(key_file, 'w') as f:
                 f.write(self._account.address)
                 
             # Also print to stdout for logging
@@ -168,6 +201,22 @@ print(account.address)
             
         except Exception as e:
             logger.error(f"Failed to export public key: {e}")
+    
+    def cleanup_temp_files(self):
+        """Clean up temporary files to prevent storage overflow"""
+        try:
+            temp_files = [
+                '/tmp/tee_key.json',
+                '/tmp/keys/public_key.txt'
+            ]
+            
+            for file_path in temp_files:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    logger.debug(f"Cleaned up temp file: {file_path}")
+                    
+        except Exception as e:
+            logger.warning(f"Failed to cleanup temp files: {e}")
     
     def get_address(self) -> str:
         """Get the TEE agent's address"""
@@ -340,6 +389,10 @@ class KittyICOTEEAgent:
         """Start monitoring blockchain events"""
         logger.info("Starting blockchain monitoring...")
         
+        # Track iterations for reduced logging
+        iteration_count = 0
+        last_status_log = time.time()
+        
         # In a real implementation, this would set up event listeners
         # For now, we'll simulate the process
         while self.running:
@@ -347,12 +400,24 @@ class KittyICOTEEAgent:
                 # Check for new settlement events
                 await self._check_for_settlements()
                 
-                # Wait before next check
-                await asyncio.sleep(10)
+                iteration_count += 1
+                
+                # Log status less frequently to save storage (every 10 minutes instead of 1 minute)
+                current_time = time.time()
+                if current_time - last_status_log >= 600:  # 10 minutes
+                    status = self.get_status()
+                    logger.info(f"Agent status (iteration {iteration_count}): Connected to networks, monitoring active")
+                    last_status_log = current_time
+                    
+                    # Periodic cleanup to prevent storage overflow
+                    self.key_manager.cleanup_temp_files()
+                
+                # Wait before next check - increased to 30 seconds to reduce resource usage
+                await asyncio.sleep(30)
                 
             except Exception as e:
                 logger.error(f"Error in monitoring loop: {e}")
-                await asyncio.sleep(30)
+                await asyncio.sleep(60)  # Wait longer on error
     
     async def _check_for_settlements(self):
         """Check for new settlement events"""
@@ -361,6 +426,7 @@ class KittyICOTEEAgent:
             latest_block = self.sapphire_w3.eth.get_block('latest')
             
             # In a real implementation, this would query for actual events
+            # Only log at debug level to reduce storage usage
             logger.debug(f"Checked block {latest_block['number']} for settlement events")
             
         except Exception as e:
@@ -469,11 +535,15 @@ async def main():
         agent = KittyICOTEEAgent()
         await agent.start()
         
-        # Keep running
+        # Keep running with reduced logging to prevent storage overflow
+        # The monitoring loop handles status logging every 10 minutes
         while True:
-            await asyncio.sleep(60)
-            status = agent.get_status()
-            logger.info(f"Agent status: {status}")
+            await asyncio.sleep(300)  # Check every 5 minutes instead of 1 minute
+            
+            # Only log if there are issues or significant events
+            if not agent.running:
+                logger.warning("Agent is no longer running, attempting restart...")
+                await agent.start()
             
     except KeyboardInterrupt:
         logger.info("Shutting down TEE Agent...")
