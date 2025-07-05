@@ -1,175 +1,130 @@
-import { FC, useEffect, useState } from 'react'
+import { FC, useState } from 'react'
 import { Card } from '../../components/Card'
-import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
+import { SaleCard } from '../../components/SaleCard'
+import { BidForm } from '../../components/BidForm'
 import classes from './index.module.css'
-import { RevealInput } from '../../components/Input/RevealInput'
-import { Message } from '../../types'
+import { useAccount } from 'wagmi'
+import { useICO } from '../../hooks/useICO'
+import { BidFormData } from '../../types/ico'
 import { StringUtils } from '../../utils/string.utils'
-import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
-import { WAGMI_CONTRACT_CONFIG, WagmiUseReadContractReturnType } from '../../constants/config'
-import { useWeb3Auth } from '../../hooks/useWeb3Auth'
 
 export const HomePage: FC = () => {
   const { address } = useAccount()
-  const {
-    state: { authInfo },
-    fetchAuthInfo,
-  } = useWeb3Auth()
+  const { sales, isLoading, error, isSubmittingBid, submitBid, getSale, fetchSales, clearError } = useICO()
+  
+  const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null)
+  const [bidSuccess, setBidSuccess] = useState<string | null>(null)
 
-  const { data: retrievedAuthor, refetch: refetchAuthor } = useReadContract({
-    ...WAGMI_CONTRACT_CONFIG,
-    functionName: 'author',
-    query: {
-      enabled: !!authInfo,
-    },
-  }) satisfies WagmiUseReadContractReturnType<'author', string>
-  const { data: retrievedMessage, refetch: refetchMessage } = useReadContract({
-    ...WAGMI_CONTRACT_CONFIG,
-    functionName: 'message',
-    args: [authInfo],
-    query: {
-      enabled: !!authInfo,
-    },
-  }) satisfies WagmiUseReadContractReturnType<'message', string, [string]>
+  const handleBidClick = (saleId: number) => {
+    setSelectedSaleId(saleId)
+    setBidSuccess(null)
+    clearError()
+  }
 
-  const {
-    data: setMessageTxHash,
-    writeContract,
-    isPending: isWriteContractPending,
-    isError: isWriteContractError,
-    error: writeContractError,
-  } = useWriteContract()
-  const {
-    isPending: isTransactionReceiptPending,
-    isSuccess: isTransactionReceiptSuccess,
-    isError: isTransactionReceiptError,
-    error: transactionReceiptError,
-  } = useWaitForTransactionReceipt({
-    hash: setMessageTxHash,
-  })
+  const handleBidCancel = () => {
+    setSelectedSaleId(null)
+    setBidSuccess(null)
+    clearError()
+  }
 
-  const isInteractingWithChain = isWriteContractPending || (setMessageTxHash && isTransactionReceiptPending)
-
-  const [message, setMessage] = useState<Message | null>(null)
-  const [messageValue, setMessageValue] = useState<string>('')
-  const [messageRevealLabel, setMessageRevealLabel] = useState<string>()
-  const [messageError, setMessageError] = useState<string | null>(null)
-  const [messageValueError, setMessageValueError] = useState<string>()
-  const [hasBeenRevealedBefore, setHasBeenRevealedBefore] = useState(false)
-
-  useEffect(() => {
-    if (authInfo) {
-      setMessage({
-        message: retrievedMessage!,
-        author: retrievedAuthor!,
-      })
-    }
-  }, [retrievedAuthor, retrievedMessage])
-
-  const fetchMessage = async () => {
-    setMessageError(null)
-    setMessageRevealLabel('Please sign message and wait...')
+  const handleBidSubmit = async (bidData: BidFormData) => {
+    if (!selectedSaleId) return
 
     try {
-      await fetchAuthInfo()
-      await refetchAuthor()
-      await refetchMessage()
-      setMessageRevealLabel(undefined)
-      setHasBeenRevealedBefore(true)
-
-      return Promise.resolve()
-    } catch (ex) {
-      setMessageError((ex as Error).message)
-      setMessageRevealLabel('Something went wrong! Please try again...')
-
-      throw ex
+      await submitBid(selectedSaleId, bidData)
+      setBidSuccess(`Bid submitted successfully for Sale #${selectedSaleId}!`)
+      setSelectedSaleId(null)
+    } catch (error) {
+      console.error('Bid submission failed:', error)
+      // Error is handled by the useICO hook
     }
   }
 
-  useEffect(() => {
-    if (isTransactionReceiptSuccess) {
-      setMessageValue('')
-
-      if (!hasBeenRevealedBefore) {
-        setMessage(null)
-        setMessageRevealLabel('Tap to reveal')
-      } else {
-        fetchMessage()
-      }
-    } else if (isTransactionReceiptError || isWriteContractError) {
-      setMessageValueError(transactionReceiptError?.message ?? writeContractError?.message)
-    }
-  }, [isTransactionReceiptSuccess, isTransactionReceiptError, isWriteContractError])
-
-  const handleRevealChanged = async (): Promise<void> => {
-    if (!isInteractingWithChain) {
-      return await fetchMessage()
-    }
-
-    return Promise.reject()
-  }
-
-  const handleSetMessage = async () => {
-    setMessageValueError(undefined)
-
-    if (!messageValue) {
-      setMessageValueError('Message is required!')
-
-      return
-    }
-
-    await writeContract({
-      ...WAGMI_CONTRACT_CONFIG,
-      functionName: 'setMessage',
-      args: [messageValue],
-    })
-  }
+  const selectedSale = selectedSaleId ? getSale(selectedSaleId) : null
 
   return (
     <div className={classes.homePage}>
-      <Card header={<h2>Demo starter</h2>}>
-        {address && (
-          <>
-            <div className={classes.activeMessageText}>
-              <h3>Active message</h3>
-              <p>Current message set in message box.</p>
+      {!address && (
+        <Card header={<h2>AI-Scored Pitch-Bid ICO</h2>}>
+          <div className={classes.connectWalletText}>
+            <p>Connect your wallet to participate in confidential ICO sales.</p>
+            <p>Your bids will be encrypted and scored by AI based on price, pitch quality, and geographic diversity.</p>
+          </div>
+        </Card>
+      )}
+
+      {address && !selectedSale && (
+        <>
+          <Card header={<h2>Available ICO Sales</h2>}>
+            <div className={classes.salesDescription}>
+              <p>Participate in confidential ICO sales with AI-powered scoring.</p>
+              <p>Your bids are encrypted and evaluated based on multiple criteria including price competitiveness, pitch quality, and geographic diversity.</p>
             </div>
-            <RevealInput
-              value={message?.message ?? ''}
-              label={message?.author}
-              disabled
-              reveal={!!message}
-              revealLabel={!!message ? undefined : messageRevealLabel}
-              onRevealChange={handleRevealChanged}
-            />
-            {messageError && <p className="error">{StringUtils.truncate(messageError)}</p>}
-            <div className={classes.setMessageText}>
-              <h3>Set message</h3>
-              <p>Set your new message by filling the message field bellow.</p>
-            </div>
-            <Input
-              value={messageValue}
-              label={address ?? ''}
-              onChange={setMessageValue}
-              error={messageValueError}
-              disabled={isInteractingWithChain}
-            />
-            <div className={classes.setMessageActions}>
-              <Button disabled={isInteractingWithChain} onClick={handleSetMessage}>
-                {isInteractingWithChain ? 'Please wait...' : 'Set Message'}
+            
+            {error && (
+              <div className={classes.errorMessage}>
+                <p className="error">{StringUtils.truncate(error)}</p>
+                <Button color="secondary" onClick={clearError}>
+                  Dismiss
+                </Button>
+              </div>
+            )}
+            
+            {bidSuccess && (
+              <div className={classes.successMessage}>
+                <p className={classes.success}>{bidSuccess}</p>
+                <Button color="secondary" onClick={() => setBidSuccess(null)}>
+                  Dismiss
+                </Button>
+              </div>
+            )}
+            
+            <div className={classes.salesControls}>
+              <Button color="secondary" onClick={fetchSales} disabled={isLoading}>
+                {isLoading ? 'Refreshing...' : 'Refresh Sales'}
               </Button>
             </div>
-          </>
-        )}
-        {!address && (
-          <>
-            <div className={classes.connectWalletText}>
-              <p>Please connect your wallet to get started.</p>
-            </div>
-          </>
-        )}
-      </Card>
+          </Card>
+
+          <div className={classes.salesGrid}>
+            {isLoading && sales.length === 0 && (
+              <Card>
+                <div className={classes.loadingText}>
+                  <p>Loading ICO sales...</p>
+                </div>
+              </Card>
+            )}
+            
+            {!isLoading && sales.length === 0 && (
+              <Card>
+                <div className={classes.noSalesText}>
+                  <p>No ICO sales available at the moment.</p>
+                  <p>Check back later for new opportunities.</p>
+                </div>
+              </Card>
+            )}
+            
+            {sales.map(sale => (
+              <SaleCard
+                key={sale.id}
+                sale={sale}
+                onBidClick={handleBidClick}
+                showBidButton={!sale.finalized}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {address && selectedSale && (
+        <BidForm
+          sale={selectedSale}
+          onSubmit={handleBidSubmit}
+          onCancel={handleBidCancel}
+          isSubmitting={isSubmittingBid}
+        />
+      )}
     </div>
   )
 }

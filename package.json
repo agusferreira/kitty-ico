@@ -27,7 +27,8 @@
     "@inquirer/prompts": "^5.5.0",
     "chalk": "^5.4.1",
     "commander": "^12.1.0",
-    "figlet": "^1.8.1"
+    "figlet": "^1.8.1",
+    "ora": "^8.2.0"
   },
   "devDependencies": {
     "@types/figlet": "^1.7.0",
