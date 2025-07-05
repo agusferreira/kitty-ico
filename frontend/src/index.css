@@ -24,6 +24,18 @@
   --red: #ff0e0e;
   --orange: #ed6c02;
   --orange-light: #fff0e4;
+  
+  /* ICO-specific color variables */
+  --color-primary: var(--brand-blue);
+  --color-success: var(--green);
+  --color-error: var(--red);
+  --color-border: var(--gray-blue-border);
+  --color-text-primary: var(--black);
+  --color-text-secondary: var(--gray-medium-dark);
+  --color-background-secondary: var(--gray-light);
+  --color-background-info: var(--brand-extra-dark-21);
+  --color-background-error: #ffe6e6;
+  --color-background-success: #e6f7f1;
 }
 
 /** Use Figtree for "…" instead of Roboto Mono. */
