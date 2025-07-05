@@ -32,6 +32,12 @@ contract ICO_Contract {
     /// Emitted once the TEE-signed settlement succeeds.
     event SaleFinalized(uint256 indexed id, uint256 price);
 
+    /// Emitted for each winning allocation (TEE agent will execute these on Ethereum)
+    event TokensAllocated(uint256 indexed saleId, address indexed winner, uint256 amount, uint256 price);
+
+    /// Emitted when all settlements are recorded
+    event SettlementRecorded(uint256 indexed saleId, uint256 totalWinners, uint256 totalTokens);
+
     /* ========== Data Types ========== */
 
     struct Sale {
@@ -60,7 +66,7 @@ contract ICO_Contract {
     // Incrementing counter for sale ids
     uint256 public nextSaleId;
 
-    // Tokens sold (immutable)
+    // Token contract address (on Ethereum) - for reference only
     IERC20 public immutable newToken;
 
     // Public address derived from the enclave private key
@@ -78,12 +84,13 @@ contract ICO_Contract {
     /* ========== Public API ========== */
 
     /**
-     * @notice Locks `supply` NEW tokens and opens a new sale.
-     * @param supply      Amount of NEW tokens put up for sale.
+     * @notice Creates a new sale (cross-chain version).
+     * @param supply      Amount of NEW tokens put up for sale (on Ethereum).
      * @param deadline    Unix timestamp when bidding ends.
      * @param policyHash  SHA-256 or keccak-256 hash of the scoring policy JSON.
      *
-     * The issuer must have previously approved this contract to pull `supply`.
+     * NOTE: Tokens remain on Ethereum. Issuer must pre-approve TEE agent
+     *       to spend tokens before calling createSale().
      */
     function createSale(
         uint256 supply,
@@ -93,10 +100,8 @@ contract ICO_Contract {
         require(supply > 0, "supply=0");
         require(deadline > block.timestamp, "deadline in past");
 
-        // Pull NEW tokens into confidential contract storage.
-        // On Sapphire, balances remain private.
-        bool ok = newToken.transferFrom(msg.sender, address(this), supply);
-        require(ok, "transfer failed");
+        // NOTE: No token transfer here - tokens stay on Ethereum
+        // Issuer must pre-approve TEE agent: kittyToken.approve(teeAgent, supply)
 
         saleId = ++nextSaleId;
 
@@ -172,18 +177,18 @@ contract ICO_Contract {
         }
 
         sale.finalized = true;
-        emit SaleFinalized(saleId, amountPerWinner); // Changed to amountPerWinner
+        emit SaleFinalized(saleId, amountPerWinner);
+        
+        // Emit summary for TEE agent to know settlement is complete
+        emit SettlementRecorded(saleId, winners.length, winners.length * amountPerWinner);
     }
 
     /* ========== Internal Helpers ========== */
 
     /**
-     * @dev Pulls funds via permit and transfers NEW tokens to the winner.
-     *      For hack-day scope we *do not* handle payments yet – this just
-     *      marks the bid as claimed and sends NEW tokens pro-rata.
-     *
-     *      Replace with real accounting (paymentToken.transferFrom, refunds,
-     *      partial fills, etc.) once integrated with WETH/USDC.
+     * @dev Records settlement for cross-chain execution.
+     *      TEE agent will monitor TokensAllocated events and execute 
+     *      the actual token transfers on Ethereum.
      */
     function _settleWinner(
         uint256 saleId,
@@ -198,12 +203,12 @@ contract ICO_Contract {
         // TODO: decode bid.permitSig and call IERC20Permit for payment token.
         // Skipped for minimal implementation.
 
-        // Transfer pre-computed amountPerWinner.
+        // Record allocation (no actual transfer - TEE agent will execute on Ethereum)
         require(amount <= sales[saleId].supply, "insufficient supply");
         sales[saleId].supply -= amount;
 
-        bool ok = newToken.transfer(winner, amount);
-        require(ok, "NEW transfer failed");
+        // Emit event for TEE agent to execute on Ethereum
+        emit TokensAllocated(saleId, winner, amount, 0); // price=0 for now
     }
 
     /* ========== View Helpers ========== */
