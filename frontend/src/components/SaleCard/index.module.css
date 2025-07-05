@@ -1,0 +1,44 @@
+.saleInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.value {
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.finalized {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.active {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.expired {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+} 
