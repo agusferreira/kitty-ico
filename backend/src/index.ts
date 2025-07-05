@@ -1,3 +1,3 @@
 export {
-    MessageBox, MessageBox__factory,
+    ICO_Contract, ICO_Contract__factory,
 } from "../typechain-types"

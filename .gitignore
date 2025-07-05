@@ -4,3 +4,6 @@ node_modules/
 frontend/dist
 frontend/playwright-report
 frontend/test-results
+
+# CLI configuration
+.kitty-ico.json
