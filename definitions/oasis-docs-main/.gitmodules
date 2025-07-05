@@ -1,0 +1,15 @@
+[submodule "external/oasis-core"]
+	path = external/oasis-core
+	url = https://github.com/oasisprotocol/oasis-core
+[submodule "external/oasis-sdk"]
+	path = external/oasis-sdk
+	url = https://github.com/oasisprotocol/oasis-sdk
+[submodule "external/adrs"]
+	path = external/adrs
+	url = https://github.com/oasisprotocol/adrs
+[submodule "external/cli"]
+	path = external/cli
+	url = https://github.com/oasisprotocol/cli
+[submodule "external/sapphire-paratime"]
+	path = external/sapphire-paratime
+	url = https://github.com/oasisprotocol/sapphire-paratime
