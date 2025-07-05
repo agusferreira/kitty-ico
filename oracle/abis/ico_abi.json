@@ -1,0 +1,51 @@
+[
+  {
+    "inputs": [
+      {"name": "saleId", "type": "uint256", "indexed": true},
+      {"name": "bidder", "type": "address", "indexed": true},
+      {"name": "amount", "type": "uint256", "indexed": false},
+      {"name": "price", "type": "uint256", "indexed": false}
+    ],
+    "name": "BidSubmitted",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {"name": "saleId", "type": "uint256", "indexed": true},
+      {"name": "bidder", "type": "address", "indexed": true},
+      {"name": "tokens", "type": "uint256", "indexed": false}
+    ],
+    "name": "TokensAllocated",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {"name": "saleId", "type": "uint256", "indexed": true},
+      {"name": "totalWinners", "type": "uint256", "indexed": false},
+      {"name": "totalTokens", "type": "uint256", "indexed": false}
+    ],
+    "name": "SettlementRecorded",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {"name": "saleId", "type": "uint256"},
+      {"name": "encryptedBid", "type": "bytes"}
+    ],
+    "name": "submitBid",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"name": "saleId", "type": "uint256"}
+    ],
+    "name": "getBids",
+    "outputs": [
+      {"name": "", "type": "bytes[]"}
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+] 

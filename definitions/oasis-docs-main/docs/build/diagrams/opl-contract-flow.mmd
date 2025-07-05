@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant User
+    participant Home as Home Contract<br/>(Host)
+    participant SGN
+    participant Executor
+    participant Sapphire as Sapphire Contract<br/>(Enclave)
+    User ->> Home: Transaction
+    Home -->> SGN: SGN Watches Events
+    SGN -->> Executor: Waits for SGN Approval
+    Executor ->> Sapphire: Submit Proof Tx
