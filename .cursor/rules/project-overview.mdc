@@ -1,0 +1,36 @@
+---
+description: Pitch-Bid ICO – Project architecture and engineering conventions
+type: manual
+alwaysApply: false
+---
+
+### Overview (auto-attached via @definitions/poc.md)
+@definitions/poc.md
+
+### Engineering Conventions
+1. Use Solidity `0.8.24` across all contracts (`backend/contracts`).
+2. Contract must expose `createSale`, `submitBid`, `finalize` with event set {`SaleCreated`, `BidSubmitted`, `SaleFinalized`}.
+3. Enforce HPKE encryption of bids; no plaintext parameters beyond `encBlob`.
+4. `finalize` **must** verify the ROFL enclave signature before settlement.
+5. Pull funds with `IERC20Permit.permit` then `transferFrom`; refund losers in same tx.
+
+### Foundry / Hardhat
+6. Brownie, Truffle etc. are *out of scope* – stick to Hardhat + Foundry tests.
+7. Use `forge-std` cheatcodes for unit tests; mimic private storage limitations of Sapphire.
+
+### Frontend
+8. Base on Next.js 14, wagmi v1, viem.
+9. Wallet UI via ConnectKit.
+10. Form components live under `frontend/src/components/`.
+
+### Enclave Code (tee/)
+11. ROFL task in TypeScript; must decrypt with libsodium HPKE suite.
+12. Scoring formula default: `0.6*price + 0.2*geo + 0.2*pitchAI` – but read JSON policy from chain.
+13. Sign result with `roflSign()`.
+
+### Docs & Tasks
+14. Keep vision & task list under `definitions/` (see `poc.md`, `steps.md`).
+15. Before large refactors, update `steps.md` and ensure Cursor references it in chat.
+
+---
+These rules summarise project-specific architecture and constraints; reference them in prompts with `@project-overview` when broad context is needed.
