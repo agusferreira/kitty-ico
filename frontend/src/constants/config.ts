@@ -1,4 +1,4 @@
-import ABI from '../../../backend/abis/ICO_Contract.json'
+import ABI from '../../../oracle/abis/ico_abi.json'
 import { UseReadContractReturnType } from 'wagmi'
 const { VITE_ICO_CONTRACT_ADDR } = import.meta.env
 

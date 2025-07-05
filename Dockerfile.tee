@@ -1,5 +1,5 @@
 # Dockerfile for Kitty ICO TEE Agent (Python)
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # Set working directory
 WORKDIR /app
@@ -16,18 +16,30 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements file
 COPY oracle/requirements.txt ./
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install compatible httpx version first
+RUN pip install --no-cache-dir --force-reinstall httpx==0.27.0
 
-# Copy source code and ABIs
-COPY oracle/ ./
+# Install Python dependencies with forced reinstall
+RUN pip install --no-cache-dir --force-reinstall -r requirements.txt
 
-# Create directories for TEE data
-RUN mkdir -p /app/keys /app/data /app/logs
+# Explicitly install OpenAI with correct version
+RUN pip install --no-cache-dir --force-reinstall openai==1.55.3
 
 # Create non-root user for security
-RUN useradd -m -u 1001 teeuser && \
-    chown -R teeuser:teeuser /app
+RUN useradd -m -u 1001 teeuser
+
+# Copy entrypoint script
+COPY oracle/entrypoint/docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Copy source code files only (not directories)
+COPY oracle/*.py /app/
+COPY oracle/requirements.txt /app/
+
+# Create data directories with correct permissions
+RUN mkdir -p /app/keys /app/data /app/logs && \
+    chown -R teeuser:teeuser /app && \
+    chmod -R 755 /app
 
 USER teeuser
 

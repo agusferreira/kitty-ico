@@ -33,10 +33,13 @@ services:
     
     # Volume mounts for development
     volumes:
-      - ./data/tee-data:/app/data
-      - ./data/tee-keys:/app/keys
-      - ./data/tee-logs:/app/logs
-      - ./oracle:/app:ro  # Source code for development
+      - ./data/tee-data:/tmp_data
+      - ./data/tee-keys:/tmp_keys
+      - ./data/tee-logs:/tmp_logs
+      - ./oracle:/app  # Source code for development
+    
+    # Use custom entrypoint script
+    entrypoint: ["docker-entrypoint.sh"]
     
     # Network configuration
     networks:
@@ -94,13 +97,9 @@ services:
     
     # Command for local development
     command: >
-      --config /config/localnet.yaml
-      --datadir /data
-      --log.level debug
-      --log.format json
-      --grpc.port 9001
-      --runtime.mode auto
-      --runtime.sgx.loader /usr/bin/oasis-core-runtime-loader
+      0x0000000000000000000000000000000000000000
+      --network localnet
+      --ollama-address http://localhost:11434
     
     # Health check
     healthcheck:

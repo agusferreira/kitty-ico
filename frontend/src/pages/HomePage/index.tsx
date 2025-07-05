@@ -46,17 +46,43 @@ export const HomePage: FC = () => {
   return (
     <div className={classes.homePage}>
       {!address && (
-        <Card header={<h2>AI-Scored Pitch-Bid ICO</h2>}>
+        <Card header={<h2>Kitty ICO</h2>}>
           <div className={classes.connectWalletText}>
-            <p>Connect your wallet to participate in confidential ICO sales.</p>
-            <p>Your bids will be encrypted and scored by AI based on price, pitch quality, and geographic diversity.</p>
+            <p>Pitch Kitty why you should get the token.</p>
+            <p>If Kitty approves, nobody will ask.</p>
+
+            <div className={classes.pitch}>
+              <p><strong>How it works:</strong></p>
+              <ul>
+                <li>
+                  You submit a <strong>sealed bid</strong> to Kitty’s brain — a cryptographically secure AI agent inside a TEE.
+                </li>
+                <li>
+                  Kitty follows a preset logic. <em>No team control. No human hands.</em>
+                </li>
+                <li>
+                  Bids are sorted. Tokens are sent. Done.
+                </li>
+              </ul>
+
+              <p><strong>Why it matters:</strong></p>
+              <ul>
+                <li>Fair, private, trustless token sales.</li>
+                <li>No whales. No interference. Just the algorithm.</li>
+                <li>All logic enforced by a secure AI. Kitty doesn’t negotiate.</li>
+              </ul>
+
+              <p>
+                <em>Prove your worth to Kitty. Make your pitch. The rest is sealed fate.</em>
+              </p>
+            </div>
           </div>
         </Card>
       )}
 
       {address && !selectedSale && (
         <>
-          <Card header={<h2>Available ICO Sales</h2>}>
+          <Card header={<h2>Kitty Sale</h2>}>
             <div className={classes.salesDescription}>
               <p>Participate in confidential ICO sales with AI-powered scoring.</p>
               <p>Your bids are encrypted and evaluated based on multiple criteria including price competitiveness, pitch quality, and geographic diversity.</p>
@@ -96,14 +122,7 @@ export const HomePage: FC = () => {
               </Card>
             )}
             
-            {!isLoading && sales.length === 0 && (
-              <Card>
-                <div className={classes.noSalesText}>
-                  <p>No ICO sales available at the moment.</p>
-                  <p>Check back later for new opportunities.</p>
-                </div>
-              </Card>
-            )}
+
             
             {sales.map(sale => (
               <SaleCard

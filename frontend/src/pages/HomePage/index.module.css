@@ -9,6 +9,7 @@
 }
 
 .connectWalletText p {
+  color: var(--black);
   margin-bottom: 1rem;
 }
 
@@ -100,6 +101,38 @@
 
 .noSalesText p:last-child {
   margin-bottom: 0;
+}
+
+.pitch {
+  margin-top: 2rem;
+  text-align: left;
+  border-top: 1px solid var(--black);
+  padding-top: 1.5rem;
+}
+
+.pitch p {
+  color: var(--black);
+  margin-bottom: 1rem;
+}
+
+.pitch ul {
+  list-style-type: '✔ ';
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.pitch li {
+  color: var(--black);
+  margin-bottom: 0.75rem;
+  padding-left: 0.5rem;
+}
+
+.pitch strong {
+  color: var(--brand-extra-dark);
+}
+
+.pitch em {
+  color: var(--gray-medium-dark);
 }
 
 /* Responsive adjustments */
