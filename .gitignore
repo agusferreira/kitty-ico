@@ -1,6 +1,8 @@
 node_modules/
 *.log
 
+.env
+
 frontend/dist
 frontend/playwright-report
 frontend/test-results
