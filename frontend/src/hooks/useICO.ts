@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
 import { WAGMI_CONTRACT_CONFIG } from '../constants/config'
-import { Sale, BidFormData, BidData } from '../types/ico'
-import { encryptBidData, generatePermitSignature, getTeePublicKey } from '../utils/encryption.utils'
+import { Sale, BidFormData, BidPayload } from '../types/ico'
+import { encryptBidData, generatePermitSignature } from '../utils/encryption.utils'
 import { parseEther } from 'viem'
 
 /**
@@ -12,9 +12,12 @@ export function useICO() {
   const [sales, setSales] = useState<Sale[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // Get connected wallet address
+  const { address } = useAccount()
 
   // Read contract hooks
-  const { data: nextSaleId, refetch: refetchNextSaleId } = useReadContract({
+  const { data: nextSaleId } = useReadContract({
     ...WAGMI_CONTRACT_CONFIG,
     functionName: 'nextSaleId',
   })
@@ -85,25 +88,40 @@ export function useICO() {
     setError(null)
     
     try {
-      // Convert form data to bid data
-      const bidDataForEncryption: BidData = {
+      // Create the full bid payload with all required fields
+      const bidPayload: BidPayload = {
+        saleId: saleId,
+        walletAddress: bidData.walletAddress || '', // Add fallback in case walletAddress is not provided
         price: parseFloat(bidData.price),
-        quantity: parseFloat(bidData.amount),
+        amount: parseFloat(bidData.amount),
         pitch: bidData.pitch,
         country: bidData.country
       }
       
-      // Get TEE public key
-      const teePublicKey = await getTeePublicKey()
-      
-      // Encrypt the bid data
-      const encryptedBlob = await encryptBidData(bidDataForEncryption, teePublicKey)
+      // Encrypt the bid data using our HPKE encryption utility
+      const encryptedBlob = await encryptBidData(bidPayload)
       
       // Calculate max spend (price * quantity)
-      const maxSpend = parseEther((bidDataForEncryption.price * bidDataForEncryption.quantity).toString())
+      const maxSpend = parseEther((bidPayload.price * bidPayload.amount).toString())
       
-      // Generate permit signature (placeholder)
-      const permitSignature = await generatePermitSignature(maxSpend, BigInt(0), BigInt(Math.floor(Date.now() / 1000) + 3600))
+      // Get current timestamp + 1 hour for deadline
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600)
+      
+      // For a production app, we would fetch the nonce from the token contract
+      // For now, we'll use 0 as a placeholder
+      const nonce = BigInt(0)
+      
+      if (!address) {
+        throw new Error('No wallet connected')
+      }
+      
+      // Generate real EIP-2612 permit signature
+      const permitSignature = await generatePermitSignature(
+        maxSpend,
+        nonce,
+        deadline,
+        address
+      )
       
       // Submit to contract
       await writeSubmitBid({

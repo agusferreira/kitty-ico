@@ -22,6 +22,8 @@ export interface EncryptedBid {
 }
 
 export interface BidPayload {
+  saleId: number;
+  walletAddress: string;
   country: string;
   price: number;
   amount: number;
@@ -33,6 +35,7 @@ export interface BidFormData {
   price: string
   pitch: string
   country: string
+  walletAddress?: string // Optional since it might be added programmatically
 }
 
 export interface SaleResult {

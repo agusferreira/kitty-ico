@@ -11,7 +11,7 @@ interface KittyBidPanelProps {
 }
 
 export const KittyBidPanel: FC<KittyBidPanelProps> = ({ onSubmit, isLoading }) => {
-  const { isConnected } = useAccount()
+  const { isConnected, address } = useAccount()
   const [country, setCountry] = useState('')
   const [price, setPrice] = useState<number | ''>('')
   const [amount, setAmount] = useState<number | ''>('')
@@ -19,12 +19,19 @@ export const KittyBidPanel: FC<KittyBidPanelProps> = ({ onSubmit, isLoading }) =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!country || !price || !amount || !pitch) {
+    if (!country || !price || !amount || !pitch || !address) {
       // Basic validation
       alert('Please fill out all fields.')
       return
     }
-    await onSubmit({ country, price, amount, pitch })
+    await onSubmit({ 
+      country, 
+      price, 
+      amount, 
+      pitch,
+      walletAddress: address,
+      saleId: 0 // This will be set by the parent component
+    })
     // Reset form on success
     setCountry('')
     setPrice('')
