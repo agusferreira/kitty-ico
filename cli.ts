@@ -1781,7 +1781,7 @@ program
   .description('Submit a bid to the ICO')
   .option('--amount <tokens>', 'Number of ICO tokens to bid for', '1000')
   .option('--price <usdc>', 'Price per ICO token in USDC', '1.50')
-  .option('--pitch <text>', 'Pitch text for AI scoring', 'Great project!')
+  .option('--pitch <text>', 'Pitch text for AI scoring', 'Oh Royal King Cat, please accept my humble offering of premium tuna!')
   .action(async (options) => {
     console.log(chalk.blue('💰 Submitting USDC Bid to ICO\n'))
     

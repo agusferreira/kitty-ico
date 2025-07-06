@@ -35,7 +35,7 @@ async function createTestBidders(): Promise<TestBidder[]> {
       bidData: {
         price: '2.50', // High USDC price per ICO token
         quantity: 1000,
-        pitch: 'Revolutionary AI-powered DeFi protocol with breakthrough consensus mechanism',
+        pitch: 'Your Royal Furriness, I offer tribute of premium tuna and endless chin scratches! I have dedicated my entire fortune to building a golden litter box empire. My portfolio includes 47 cat cafes and a laser pointer manufacturing dynasty. I once saved a kitten from a tree during a thunderstorm. Please, oh mighty King Cat, let me serve in your noble court of crypto!',
         country: 'US'
       }
     },
@@ -45,7 +45,7 @@ async function createTestBidders(): Promise<TestBidder[]> {
       bidData: {
         price: '2.00', // Mid USDC price
         quantity: 2000,
-        pitch: 'Innovative blockchain solution leveraging novel cryptographic primitives for scalable privacy-preserving smart contracts',
+        pitch: 'Dearest King Cat, I am but a humble servant who has studied the ancient art of cardboard box architecture. I have invented self-warming cat beds powered by blockchain and developed a decentralized yarn ball protocol. My grandmother was part Maine Coon. I pledge to donate 90% of profits to building cat towers that reach the moon. Meow means yes, right?',
         country: 'CA'
       }
     },
@@ -55,7 +55,7 @@ async function createTestBidders(): Promise<TestBidder[]> {
       bidData: {
         price: '1.20', // Lower USDC price
         quantity: 5000,
-        pitch: 'Simple token swap platform',
+        pitch: 'My Liege, I may not have much, but I offer my soul and my extensive collection of cat memes from 2012. I speak fluent purr and have mastered the ancient art of opening tuna cans with my eyes closed. I once had a cat named Mr. Whiskers who I swear understood quantum physics. I will name my firstborn child after you, Your Majesty!',
         country: 'DE'
       }
     },
@@ -65,7 +65,7 @@ async function createTestBidders(): Promise<TestBidder[]> {
       bidData: {
         price: '2.20', // Good USDC price with large quantity
         quantity: 3000,
-        pitch: 'Unique multi-chain interoperability protocol with revolutionary consensus and novel economic incentives',
+        pitch: 'Oh Magnificent Whiskers of Wall Street! I bring offerings of the finest catnip from the Swiss Alps and a business plan written entirely in hairball hieroglyphics. I have trained an army of 1000 cats to mine crypto using their paws. My startup revolutionizes the pet industry by teaching cats to trade derivatives. I bow before your fluffy supremacy and beg for your blessing!',
         country: 'GB'
       }
     }

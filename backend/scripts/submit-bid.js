@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 async function main() {
   const bidAmount = process.env.BID_AMOUNT || "1000";
   const bidPrice = process.env.BID_PRICE || "0.1";
-  const pitch = process.env.PITCH || "Great project!";
+  const pitch = process.env.PITCH || "Your Majesty King Cat, I humbly beg for your royal approval of my meager offering!";
   const country = process.env.COUNTRY || "US";
   const saleId = process.env.SALE_ID || "1";
   

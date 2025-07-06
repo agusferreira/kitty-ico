@@ -78,7 +78,7 @@ async function main() {
   // Get parameters from environment
   const bidAmount = process.env.BID_AMOUNT || "1000"; // ICO tokens requested
   const bidPrice = process.env.BID_PRICE || "1.50"; // USDC per ICO token
-  const pitch = process.env.PITCH || "Great project with strong fundamentals!";
+  const pitch = process.env.PITCH || "Oh glorious King Cat, I present my tribute of finest salmon and pledge eternal servitude to your fluffy empire!";
   const country = process.env.COUNTRY || "US";
   const saleId = process.env.SALE_ID || "1";
   
