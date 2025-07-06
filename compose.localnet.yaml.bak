@@ -1,0 +1,159 @@
+services:
+  # Official Sapphire Localnet - provides complete Oasis network stack locally
+  sapphire-localnet:
+    image: ghcr.io/oasisprotocol/sapphire-localnet:latest
+    container_name: kitty-ico-sapphire-localnet
+    platform: linux/x86_64  # Required for macOS (Apple M chips)
+    restart: unless-stopped
+    
+    # Port mapping - standard localnet ports
+    ports:
+      - "8544:8544"  # Oasis GRPC
+      - "8545:8545"  # Web3 RPC
+      - "8546:8546"  # Web3 WebSocket
+      - "8547:8547"  # Nexus API
+      - "8548:8548"  # Explorer UI
+    
+    # Environment variables for localnet
+    environment:
+      - OASIS_DOCKER_START_EXPLORER=yes
+    
+    # Networks
+    networks:
+      - localnet
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "test", "-f", "/CONTAINER_READY"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  # TEE Agent for local development
+  tee-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.tee
+    platform: linux/amd64  # Ensure consistent platform for macOS
+    container_name: kitty-ico-tee-agent-local
+    restart: unless-stopped
+    
+    # Environment variables for local development
+    environment:
+      # Development mode settings
+      - NODE_ENV=development
+      - TEE_MODE=development
+      - LOG_LEVEL=debug
+      - PYTHONUNBUFFERED=1
+      
+      # Network configuration - connect to localnet
+      - OASIS_NETWORK=localnet
+      - ETHEREUM_NETWORK=localnet
+      - SAPPHIRE_RPC_URL=http://sapphire-localnet:8545
+      - ETHEREUM_RPC_URL=http://sapphire-localnet:8545
+      
+      # Development API keys (mock/development)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-development-key}
+      
+      # Contract addresses (to be set after deployment)
+      - ICO_CONTRACT_ADDRESS=${ICO_CONTRACT_ADDRESS:-}
+      - TOKEN_CONTRACT_ADDRESS=${TOKEN_CONTRACT_ADDRESS:-}
+      - BATCH_SETTLEMENT_ADDRESS=${BATCH_SETTLEMENT_ADDRESS:-}
+      
+      # TEE-specific configuration (relaxed for development)
+      - TEE_KEY_GENERATION=development
+      - TEE_STORAGE_ENCRYPTION=false
+      - TEE_ATTESTATION_REQUIRED=false
+    
+    # Override command to run from source directory in development
+    command: ["python", "/app/src/agent.py"]
+    
+    # Working directory
+    working_dir: /app
+    
+    # Volume mounts for development
+    volumes:
+      - ./oracle:/app/src:ro  # Mount source code read-only to /app/src
+      - tee-data:/app/data
+      - tee-keys:/app/keys
+      - tee-logs:/app/logs
+    
+    # Network configuration
+    networks:
+      - localnet
+    
+    # Port mapping for debugging and health checks
+    ports:
+      - "8080:8080"  # TEE agent HTTP endpoint (if needed)
+    
+    # Dependencies - wait for localnet to be ready
+    depends_on:
+      sapphire-localnet:
+        condition: service_healthy
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8080/health', timeout=5)" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Frontend for local development (optional)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: kitty-ico-frontend-local
+    restart: unless-stopped
+    profiles:
+      - frontend  # Use profiles to make it optional
+    
+    # Environment variables
+    environment:
+      - NODE_ENV=development
+      - VITE_ICO_CONTRACT_ADDRESS=${ICO_CONTRACT_ADDRESS:-}
+      - VITE_TOKEN_CONTRACT_ADDRESS=${TOKEN_CONTRACT_ADDRESS:-}
+      - VITE_BATCH_SETTLEMENT_ADDRESS=${BATCH_SETTLEMENT_ADDRESS:-}
+      - VITE_SAPPHIRE_RPC_URL=http://localhost:8545
+      - VITE_ETHEREUM_RPC_URL=http://localhost:8545
+      - VITE_CHAIN_ID=23295  # Sapphire testnet chain ID
+    
+    # Volume mounts for development
+    volumes:
+      - ./frontend/src:/app/src:ro
+      - ./frontend/public:/app/public:ro
+    
+    # Network configuration
+    networks:
+      - localnet
+    
+    # Port mapping
+    ports:
+      - "5173:5173"  # Vite dev server
+    
+    # Dependencies
+    depends_on:
+      sapphire-localnet:
+        condition: service_healthy
+      tee-agent:
+        condition: service_healthy
+
+# Named volumes for development data persistence
+volumes:
+  tee-data:
+    driver: local
+  tee-keys:
+    driver: local
+  tee-logs:
+    driver: local
+
+# Networks
+networks:
+  localnet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16 

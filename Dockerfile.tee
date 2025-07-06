@@ -35,5 +35,5 @@ USER teeuser
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD python -c "print('TEE Agent is running')" || exit 1
 
-# Default command
+# Default command - in development, this will be overridden by volume mount
 CMD ["python", "agent.py"] 

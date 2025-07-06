@@ -27,6 +27,9 @@
     "build:esm": "tsc -p tsconfig/esm.json",
     "build": "npm-run-all build:compile --parallel build:cjs build:esm",
     "test": "hardhat test",
+    "deploy-localnet": "hardhat run scripts/deploy-localnet.ts --network sapphire-localnet",
+    "test-bid": "hardhat run scripts/test-bid.ts --network sapphire-localnet",
+    "deploy-testnet": "hardhat run deploy/02_deploy_ico.ts --network sapphire-testnet",
     "prepublishOnly": "pnpm build"
   },
   "exports": {
@@ -38,6 +41,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.1",
+    "dotenv": "^17.0.1",
     "ethers": "^6.10.0"
   },
   "devDependencies": {

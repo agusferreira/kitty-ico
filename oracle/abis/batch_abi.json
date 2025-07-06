@@ -1,26 +1,224 @@
 [
   {
     "inputs": [
-      {"name": "saleId", "type": "uint256", "indexed": true},
-      {"name": "totalWinners", "type": "uint256", "indexed": false},
-      {"name": "totalTokens", "type": "uint256", "indexed": false}
+      {
+        "internalType": "address",
+        "name": "teePubKey_",
+        "type": "address"
+      }
     ],
-    "name": "BatchSettlementExecuted",
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "saleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "winnersCount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "totalTokens",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "totalPayment",
+        "type": "uint256"
+      }
+    ],
+    "name": "BatchSettled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "saleId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "winner",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "reason",
+        "type": "string"
+      }
+    ],
+    "name": "SettlementFailed",
     "type": "event"
   },
   {
     "inputs": [
-      {"name": "saleId", "type": "uint256"},
-      {"name": "settlements", "type": "tuple[]", "components": [
-        {"name": "bidder", "type": "address"},
-        {"name": "amount", "type": "uint256"},
-        {"name": "tokens", "type": "uint256"}
-      ]},
-      {"name": "signature", "type": "bytes"}
+      {
+        "internalType": "address",
+        "name": "issuer",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "winner",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "payment",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes",
+            "name": "permitSig",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct BatchSettlement.SettlementData",
+        "name": "settlement",
+        "type": "tuple"
+      },
+      {
+        "internalType": "contract IERC20",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IERC20Permit",
+        "name": "paymentToken",
+        "type": "address"
+      }
     ],
-    "name": "executeBatchSettlement",
+    "name": "_executeSettlement",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "saleId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "issuer",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "paymentToken",
+            "type": "address"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "winner",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "tokenAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "payment",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bytes",
+                "name": "permitSig",
+                "type": "bytes"
+              }
+            ],
+            "internalType": "struct BatchSettlement.SettlementData[]",
+            "name": "settlements",
+            "type": "tuple[]"
+          },
+          {
+            "internalType": "bytes",
+            "name": "teeSignature",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct BatchSettlement.BatchSettleParams",
+        "name": "params",
+        "type": "tuple"
+      }
+    ],
+    "name": "batchSettle",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "processedSales",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "teePubKey",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
-] 
+]

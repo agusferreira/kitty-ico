@@ -1,116 +1,106 @@
-version: '3.8'
-
 services:
+  # Official Sapphire Localnet - provides complete Oasis network stack locally
+  sapphire-localnet:
+    image: ghcr.io/oasisprotocol/sapphire-localnet:latest
+    container_name: kitty-ico-sapphire-localnet
+    platform: linux/x86_64  # Required for macOS (Apple M chips)
+    restart: unless-stopped
+    
+    # Port mapping - standard localnet ports
+    ports:
+      - "8544:8544"  # Oasis GRPC
+      - "8545:8545"  # Web3 RPC
+      - "8546:8546"  # Web3 WebSocket
+      - "8547:8547"  # Nexus API
+      - "8548:8548"  # Explorer UI
+    
+    # Environment variables for localnet
+    environment:
+      - OASIS_DOCKER_START_EXPLORER=yes
+    
+    # Networks
+    networks:
+      - localnet
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "test", "-f", "/CONTAINER_READY"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
   # TEE Agent for local development
   tee-agent:
     build:
       context: .
       dockerfile: Dockerfile.tee
+    platform: linux/amd64  # Ensure consistent platform for macOS
     container_name: kitty-ico-tee-agent-local
     restart: unless-stopped
     
     # Environment variables for local development
     environment:
+      # Development mode settings
       - NODE_ENV=development
       - TEE_MODE=development
       - LOG_LEVEL=debug
-      # Network configuration
+      - PYTHONUNBUFFERED=1
+      
+      # Network configuration - connect to localnet
       - OASIS_NETWORK=localnet
-      - ETHEREUM_NETWORK=hardhat
-      # RPC endpoints for local development
-      - SAPPHIRE_RPC_URL=http://oasis-node:8545
-      - ETHEREUM_RPC_URL=http://host.docker.internal:8545
-      # API keys (development/mock)
-      - OPENAI_API_KEY=sk-development-key
+      - ETHEREUM_NETWORK=localnet
+      - SAPPHIRE_RPC_URL=http://sapphire-localnet:8545
+      - ETHEREUM_RPC_URL=${ETHEREUM_RPC_URL:-https://sepolia.infura.io/v3/0e388a17e734434abc996a366025f972}
+      
+      # Development API keys (mock/development)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-development-key}
+      
       # Contract addresses (to be set after deployment)
       - ICO_CONTRACT_ADDRESS=${ICO_CONTRACT_ADDRESS:-}
       - TOKEN_CONTRACT_ADDRESS=${TOKEN_CONTRACT_ADDRESS:-}
       - BATCH_SETTLEMENT_ADDRESS=${BATCH_SETTLEMENT_ADDRESS:-}
+      
       # TEE-specific configuration (relaxed for development)
       - TEE_KEY_GENERATION=development
       - TEE_STORAGE_ENCRYPTION=false
       - TEE_ATTESTATION_REQUIRED=false
     
+    # Override command to run from source directory in development
+    command: ["python", "/app/src/agent.py"]
+    
+    # Working directory
+    working_dir: /app
+    
     # Volume mounts for development
     volumes:
-      - ./data/tee-data:/app/data
-      - ./data/tee-keys:/app/keys
-      - ./data/tee-logs:/app/logs
-      - ./oracle:/app:ro  # Source code for development
+      - ./oracle:/app/src:ro  # Mount source code read-only to /app/src
+      - tee-data:/app/data
+      - tee-keys:/app/keys
+      - tee-logs:/app/logs
     
     # Network configuration
     networks:
-      - tee-network
+      - localnet
     
-    # Port mapping for debugging
+    # Port mapping for debugging and health checks
     ports:
-      - "9229:9229"  # Node.js debugger
+      - "8080:8080"  # TEE agent HTTP endpoint (if needed)
     
-    # Development command with hot reload
-    command: >
-      sh -c "
-        echo 'Starting TEE Agent in development mode...' &&
-        python agent.py
-      "
-    
-    # Dependencies
+    # Dependencies - wait for localnet to be ready
     depends_on:
-      - oasis-node
+      sapphire-localnet:
+        condition: service_healthy
     
     # Health check
     healthcheck:
-      test: ["CMD", "python", "-c", "print('Development health check')"]
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8080/health', timeout=5)" ]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
-
-  # Local Oasis node for development
-  oasis-node:
-    image: "ghcr.io/oasisprotocol/demo-rofl-chatbot:latest@sha256:b62206f22871ea506e2a3d1db5bfbc8f9c15c68279708a0d5f845a1654f9712f"
-    container_name: kitty-ico-oasis-node-local
-    restart: unless-stopped
-    
-    # Environment for local development
-    environment:
-      - OASIS_UNSAFE_SKIP_AVR_VERIFY=1
-      - OASIS_UNSAFE_SKIP_KM_POLICY=1
-      - OASIS_UNSAFE_ALLOW_DEBUG_ENCLAVES=1
-    
-    # Volume mounts
-    volumes:
-      - ./data/oasis-data:/data
-      - ./oasis-config:/config
-    
-    # Network configuration
-    networks:
-      - tee-network
-    
-    # Port mapping
-    ports:
-      - "8545:8545"  # RPC
-      - "8546:8546"  # WebSocket
-      - "9001:9001"  # Oasis node metrics
-    
-    # Command for local development
-    command: >
-      --config /config/localnet.yaml
-      --datadir /data
-      --log.level debug
-      --log.format json
-      --grpc.port 9001
-      --runtime.mode auto
-      --runtime.sgx.loader /usr/bin/oasis-core-runtime-loader
-    
-    # Health check
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8545"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
       start_period: 60s
 
-  # Frontend for local development
+  # Frontend for local development (optional)
   frontend:
     build:
       context: ./frontend
@@ -118,7 +108,7 @@ services:
     container_name: kitty-ico-frontend-local
     restart: unless-stopped
     profiles:
-      - frontend
+      - frontend  # Use profiles to make it optional
     
     # Environment variables
     environment:
@@ -128,6 +118,7 @@ services:
       - VITE_BATCH_SETTLEMENT_ADDRESS=${BATCH_SETTLEMENT_ADDRESS:-}
       - VITE_SAPPHIRE_RPC_URL=http://localhost:8545
       - VITE_ETHEREUM_RPC_URL=http://localhost:8545
+      - VITE_CHAIN_ID=23295  # Sapphire testnet chain ID
     
     # Volume mounts for development
     volumes:
@@ -136,7 +127,7 @@ services:
     
     # Network configuration
     networks:
-      - tee-network
+      - localnet
     
     # Port mapping
     ports:
@@ -144,10 +135,12 @@ services:
     
     # Dependencies
     depends_on:
-      - tee-agent
-      - oasis-node
+      sapphire-localnet:
+        condition: service_healthy
+      tee-agent:
+        condition: service_healthy
 
-# Named volumes for local development
+# Named volumes for development data persistence
 volumes:
   tee-data:
     driver: local
@@ -155,14 +148,12 @@ volumes:
     driver: local
   tee-logs:
     driver: local
-  oasis-data:
-    driver: local
 
 # Networks
 networks:
-  tee-network:
+  localnet:
     driver: bridge
     ipam:
       driver: default
       config:
-        - subnet: 172.21.0.0/16 
+        - subnet: 172.20.0.0/16 
